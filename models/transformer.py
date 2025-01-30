@@ -11,7 +11,7 @@ class UH1_Transformer(nn.Module):
                 num_vq=1024, 
                 embed_dim=512, 
                 clip_dim=512, 
-                block_size=16, 
+                block_size=16, # number of input tokens
                 num_layers=2, 
                 n_head=8, 
                 drop_out_rate=0.1, 
@@ -37,7 +37,7 @@ class UH1_Transformer(nn.Module):
             else:
                 x = xs
             logits = self.forward(x, clip_feature)
-            logits = logits[:, -1, :]
+            logits = logits[:, -1, :] # logits is likely a 3D tensor of shape (batch_size, seq_length, vocab_size)
             probs = F.softmax(logits, dim=-1)
             if if_categorial:
                 dist = Categorical(probs)
@@ -58,7 +58,7 @@ class UH1_Transformer(nn.Module):
             if k == self.block_size - 1:
                 return xs[:, :-1]
         return xs
-
+# self attention 
 class CausalCrossConditionalSelfAttention(nn.Module):
 
     def __init__(self, embed_dim=512, block_size=16, n_head=8, drop_out_rate=0.1):
@@ -95,7 +95,7 @@ class CausalCrossConditionalSelfAttention(nn.Module):
         # output projection
         y = self.resid_drop(self.proj(y))
         return y
-
+# normalization + self attention + feed forward
 class Block(nn.Module):
 
     def __init__(self, embed_dim=512, block_size=16, n_head=8, drop_out_rate=0.1, fc_rate=4):
@@ -114,7 +114,7 @@ class Block(nn.Module):
         x = x + self.attn(self.ln1(x))
         x = x + self.mlp(self.ln2(x))
         return x
-
+#transformer-based encoder : learning embedding + position embedding + attention blocks  
 class CrossCondTransBase(nn.Module):
 
     def __init__(self, 
@@ -164,8 +164,7 @@ class CrossCondTransBase(nn.Module):
         x = self.blocks(x)
 
         return x
-
-
+# transformer decoder
 class CrossCondTransHead(nn.Module):
 
     def __init__(self, 
